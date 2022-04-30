@@ -7,12 +7,17 @@ import ij.IJ
 import ij.plugin.Duplicator
 import de.csbdresden.stardist.StarDist2D
 import ij.ImagePlus
+import inra.ijpb.plugins.AnalyzeRegions
+import inra.ijpb.watershed.MarkerControlledWatershedTransform2D
 
 // check update sites
-a = isUpdateSiteActive("StarDist");
-b = isUpdateSiteActive("CSBDeep");
-c = isUpdateSiteActive("IJPB-plugins");
-d = isUpdateSiteActive("PTBIOP");
+boolean checkStarDist = isUpdateSiteActive("StarDist");
+boolean checkCSBDeep = isUpdateSiteActive("CSBDeep");
+boolean checkMorphoLibJ = isUpdateSiteActive("IJPB-plugins");
+boolean checkBIOP = isUpdateSiteActive("PTBIOP");
+
+// exit if any update site is missing
+// TODO
 
 // duplicate channels
 def dup = new Duplicator()
@@ -25,7 +30,12 @@ setDisplayMinAndMax(impLabels)
 impLabels.show()
 
 // analyze regions
-IJ.run(impLabels, "Analyze Regions", "area");
+ar = new AnalyzeRegions()
+//def setup = ar.setup("area", impLabels)
+def table = ar.process(impLabels)
+table.show("Results")
+
+// create a list of labels to be discarded
 
 
 def isUpdateSiteActive (updateSite) {
