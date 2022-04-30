@@ -34,9 +34,18 @@ ar = new AnalyzeRegions()
 //def setup = ar.setup("area", impLabels)
 def table = ar.process(impLabels)
 table.show("Results")
+int count = table.size()
+println "$count labels"
 
-// create a list of labels to be discarded
-
+// get values from the result table and store the index of labels that fail to meet one or more criteria
+def labelDiscard = []
+for (i in 0..count-1) {
+	int area = table.getValue("Area", i)
+	if (area < 120 || area > 2500) {
+		labelDiscard.add(i+1)
+	}
+}
+println "Discard labels $labelDiscard"
 
 def isUpdateSiteActive (updateSite) {
 	checkUpdate = true
