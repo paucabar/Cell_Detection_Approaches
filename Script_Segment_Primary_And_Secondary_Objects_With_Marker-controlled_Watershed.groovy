@@ -8,6 +8,8 @@ import ij.plugin.Duplicator
 import de.csbdresden.stardist.StarDist2D
 import ij.ImagePlus
 import inra.ijpb.plugins.AnalyzeRegions
+import inra.ijpb.label.edit.ReplaceLabelValues
+import ij.plugin.filter.GaussianBlur
 import inra.ijpb.watershed.MarkerControlledWatershedTransform2D
 
 // check update sites
@@ -22,17 +24,18 @@ boolean checkBIOP = isUpdateSiteActive("PTBIOP");
 // duplicate channels
 def dup = new Duplicator()
 def impCyt = dup.run(imp, 1, 1, 1, 1, 1, 1);
+def impCytMask = dup.run(imp, 1, 1, 1, 1, 1, 1);
 def impNuc = dup.run(imp, 2, 2, 1, 1, 1, 1);
 
 // run StarDist
-def impLabels = runStarDist(impNuc, 0.5, 0.25)
-setDisplayMinAndMax(impLabels)
-impLabels.show()
+def impNucLabels = runStarDist(impNuc, 0.5, 0.25)
+setDisplayMinAndMax(impNucLabels)
+impNucLabels.show()
 
 // analyze regions
 ar = new AnalyzeRegions()
 //def setup = ar.setup("area", impLabels)
-def table = ar.process(impLabels)
+def table = ar.process(impNucLabels)
 table.show("Results")
 int count = table.size()
 println "$count labels"
@@ -45,7 +48,20 @@ for (i in 0..count-1) {
 		labelDiscard.add(i+1)
 	}
 }
-println "Discard labels $labelDiscard"
+def labelDiscardFloat = labelDiscard as float[]
+println "Discard labels $labelDiscardFloat"
+
+// replace selected labels by 0
+//float replaceBy = 0.0
+//rlv = new ReplaceLabelValues()
+//def impLabelsFiltered = rlv.process(impLabels, labelDiscardFloat, replaceBy)
+//println impLabelsFiltered.getClass()
+//impLabelsFiltered.show()
+
+// marker-controlled watershed
+impCytLabels = runMarkerControlledWatershed(impCyt, impNucLabels, impCytMask)
+setDisplayMinAndMax(impCytLabels)
+impCytLabels.show()
 
 def isUpdateSiteActive (updateSite) {
 	checkUpdate = true
@@ -75,4 +91,22 @@ def setDisplayMinAndMax(image) {
 	println "Set display 0 - $maxImage"	
 	image.setDisplayRange(0, maxImage)
 	IJ.run(image, "glasbey inverted", "")
+}
+
+def runMarkerControlledWatershed(input, labels, mask) {
+	def ipInput = input.getProcessor()
+	def ipLabels = labels.getProcessor()
+	def ipMask = mask.getProcessor()
+	println ipMask.getClass()
+	gb = new GaussianBlur()
+	def ipMaskGaussian = gb.blurGaussian(ipMask, 1.5)
+	println ipMaskGaussian.getClass()
+	ipMaskGaussian.setAutoThreshold("Triangle dark")
+	def ipBinaryMask = ipMaskGaussian.createMask()
+	mcwt = new MarkerControlledWatershedTransform2D (ipInput, ipLabels, ipBinaryMask, 8, 5.0)
+	// I guess this connectivity setup  [int 8] establishes
+	// diagonal connectivity (8-connected vs 4-connected)...
+	labelsCell = mcwt.applyWithPriorityQueue()
+	def impCytLabels = new ImagePlus("Cyt Labels", labelsCell)
+	return impCytLabels
 }
