@@ -25,7 +25,6 @@ boolean checkBIOP = isUpdateSiteActive("PTBIOP");
 // duplicate channels
 def dup = new Duplicator()
 def impCyt = dup.run(imp, 1, 1, 1, 1, 1, 1);
-//def impCytMask = dup.run(imp, 1, 1, 1, 1, 1, 1);
 def impNuc = dup.run(imp, 2, 2, 1, 1, 1, 1);
 
 // run StarDist
@@ -45,19 +44,21 @@ println "$count labels"
 def labelDiscard = []
 for (i in 0..count-1) {
 	int area = table.getValue("Area", i)
-	if (area < 120 || area > 2500) {
+	if (area < 105 || area > 2500) {
 		labelDiscard.add(i+1)
 	}
 }
-def labelDiscardFloat = labelDiscard as float[]
+def labelDiscardFloat = labelDiscard as int[]
 println "Discard labels $labelDiscardFloat"
 
 // replace selected labels by 0
-//float replaceBy = 0.0
-//rlv = new ReplaceLabelValues()
-//def impLabelsFiltered = rlv.process(impLabels, labelDiscardFloat, replaceBy)
-//println impLabelsFiltered.getClass()
-//impLabelsFiltered.show()
+int replaceBy = 0
+def ipImpNucLabels = impNucLabels.getProcessor()
+rlv = new ReplaceLabelValues()
+rlv.process(ipImpNucLabels, labelDiscardFloat, replaceBy)
+//def impFilteredLabels = convertService.convert(ipImpNucLabels, ImagePlus.class)
+def impFilteredLabels = new ImagePlus("Nuc Filtered Labels", ipImpNucLabels)
+impFilteredLabels.show()
 
 // marker-controlled watershed
 impCytLabels = runMarkerControlledWatershed(impCyt, impNucLabels)
@@ -111,7 +112,7 @@ def runMarkerControlledWatershed(input, labels) {
 	// I guess this connectivity setup  [int 8] establishes
 	// diagonal connectivity (8-connected vs 4-connected)...
 	
-	labelsCell = mcwt.applyWithPriorityQueue()
+	labelsCell = mcwt.applyWithPriorityQueue() // label -1 for not detected cytoplasm
 	def impCytLabels = new ImagePlus("Cyt Labels", labelsCell)
 	return impCytLabels
 }
