@@ -65,6 +65,14 @@ impCytLabels = runMarkerControlledWatershed(impCyt, impNucLabels)
 setDisplayMinAndMax(impCytLabels)
 impCytLabels.show()
 
+// replace -1.0 by 0.0
+def replaceByFloat = replaceBy as float
+def arrayMinusOne = [-1.0] as float[]
+def ipImpCytLabels = impCytLabels.getProcessor()
+rlv.process(ipImpCytLabels, arrayMinusOne, replaceByFloat)
+def result = new ImagePlus("Result", ipImpCytLabels)
+result.show()
+
 def isUpdateSiteActive (updateSite) {
 	checkUpdate = true
 	if (! updateService.getUpdateSite(updateSite).isActive()) {
