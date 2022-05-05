@@ -30,13 +30,13 @@ def impNuc = dup.run(imp, 2, 2, 1, 1, 1, 1);
 // run StarDist
 def impNucLabels = runStarDist(impNuc, 0.5, 0.25)
 setDisplayMinAndMax(impNucLabels)
-impNucLabels.show()
+//impNucLabels.show()
 
 // analyze regions
 def ar = new AnalyzeRegions()
 ar.setup("Area", impNucLabels)
 def table = ar.process(impNucLabels)
-table.show("Results")
+//table.show("Results")
 int count = table.size()
 println "$count labels"
 
@@ -51,26 +51,25 @@ for (i in 0..count-1) {
 def labelDiscardFloat = labelDiscard as int[]
 println "Discard labels $labelDiscardFloat"
 
-// replace selected labels by 0
+// in nuclei labels: replace selected labels by 0
 int replaceBy = 0
 def ipImpNucLabels = impNucLabels.getProcessor()
 rlv = new ReplaceLabelValues()
 rlv.process(ipImpNucLabels, labelDiscardFloat, replaceBy)
-//def impFilteredLabels = convertService.convert(ipImpNucLabels, ImagePlus.class)
-def impFilteredLabels = new ImagePlus("Nuc Filtered Labels", ipImpNucLabels)
+def impFilteredLabels = new ImagePlus("Nuclei Labels", ipImpNucLabels)
 impFilteredLabels.show()
 
 // marker-controlled watershed
 impCytLabels = runMarkerControlledWatershed(impCyt, impNucLabels)
 setDisplayMinAndMax(impCytLabels)
-impCytLabels.show()
+//impCytLabels.show()
 
-// replace -1.0 by 0.0
+// in cell labels: replace -1.0 by 0.0
 def replaceByFloat = replaceBy as float
 def arrayMinusOne = [-1.0] as float[]
 def ipImpCytLabels = impCytLabels.getProcessor()
 rlv.process(ipImpCytLabels, arrayMinusOne, replaceByFloat)
-def impCellLabels = new ImagePlus("Cytoplasmic Labels", ipImpCytLabels)
+def impCellLabels = new ImagePlus("Cytoplasm Labels", ipImpCytLabels)
 def ic3 = new ImageConverter(impCellLabels)
 ic3.setDoScaling(false)
 ic3.convertToGray16()
