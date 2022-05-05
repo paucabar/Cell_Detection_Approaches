@@ -70,8 +70,12 @@ def replaceByFloat = replaceBy as float
 def arrayMinusOne = [-1.0] as float[]
 def ipImpCytLabels = impCytLabels.getProcessor()
 rlv.process(ipImpCytLabels, arrayMinusOne, replaceByFloat)
-def result = new ImagePlus("Result", ipImpCytLabels)
-result.show()
+def impCellLabels = new ImagePlus("Cytoplasmic Labels", ipImpCytLabels)
+def ic3 = new ImageConverter(impCellLabels)
+ic3.setDoScaling(false)
+ic3.convertToGray16()
+setDisplayMinAndMax(impCellLabels)
+impCellLabels.show()
 
 def isUpdateSiteActive (updateSite) {
 	checkUpdate = true
@@ -109,6 +113,7 @@ def runMarkerControlledWatershed(input, labels) {
 	
 	def inputGausian = input.duplicate()
 	def ic = new ImageConverter(inputGausian)
+	ic.setDoScaling(true)
 	ic.convertToGray8()
 	def gb = new GaussianBlur()
 	def ipInputGaussian = inputGausian.getProcessor()
