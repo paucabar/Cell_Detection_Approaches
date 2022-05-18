@@ -2,8 +2,10 @@
 #@ UpdateService updateService
 #@ CommandService command
 #@ ConvertService convertService
-#@ Integer (label="Nuclei Channel", value=2, max=4, min=1, style="slider") nucleiChannel
-#@ Integer (label="Cell Channel", value=1, max=4, min=1, style="slider") cellChannel
+#@ Integer (label="Nuclei Channel", value=2, max=4, min=1, style="listBox") nucleiChannel
+#@ Integer (label="Cell Channel", value=1, max=4, min=1, style="listBox") cellChannel
+#@ Double (label="StarDist Score Threshold", value=0.5, max=1.0, min=0.0, stepSize=0.05, style="slider") scoreSD
+#@ Double (label="StarDist Overlap Threshold", value=0.25, max=1.0, min=0.0, stepSize=0.05, style="slider") overlapSD
 
 import ij.IJ
 import ij.plugin.Duplicator
@@ -30,7 +32,7 @@ def impCyt = dup.run(imp, cellChannel, cellChannel, 1, 1, 1, 1);
 def impNuc = dup.run(imp, nucleiChannel, nucleiChannel, 1, 1, 1, 1);
 
 // run StarDist
-def impNucLabels = runStarDist(impNuc, 0.5, 0.25)
+def impNucLabels = runStarDist(impNuc, scoreSD, overlapSD)
 setDisplayMinAndMax(impNucLabels)
 //impNucLabels.show()
 
