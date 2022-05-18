@@ -44,7 +44,8 @@ def table = ar.process(impNucLabels)
 int count = table.size()
 println "$count labels"
 
-// get values from the result table and store the index of labels that fail to meet one or more criteria
+// get values from the result table and store the index of labels
+// that fail to meet one or more criteria
 def labelDiscard = []
 for (i in 0..count-1) {
 	int area = table.getValue("Area", i)
@@ -64,7 +65,7 @@ def impFilteredLabels = new ImagePlus("Nuclei Labels", ipImpNucLabels)
 impFilteredLabels.show()
 
 // marker-controlled watershed
-impCytLabels = runMarkerControlledWatershed(impCyt, impNucLabels)
+impCytLabels = runMarkerControlledWatershed(impCyt, impFilteredLabels)
 setDisplayMinAndMax(impCytLabels)
 //impCytLabels.show()
 
