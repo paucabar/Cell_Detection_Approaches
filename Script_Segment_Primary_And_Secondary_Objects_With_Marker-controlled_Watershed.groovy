@@ -2,6 +2,8 @@
 #@ UpdateService updateService
 #@ CommandService command
 #@ ConvertService convertService
+#@ Integer (label="Nuclei Channel", value=2, max=4, min=1, style="slider") nucleiChannel
+#@ Integer (label="Cell Channel", value=1, max=4, min=1, style="slider") cellChannel
 
 import ij.IJ
 import ij.plugin.Duplicator
@@ -24,8 +26,8 @@ boolean checkBIOP = isUpdateSiteActive("PTBIOP");
 
 // duplicate channels
 def dup = new Duplicator()
-def impCyt = dup.run(imp, 1, 1, 1, 1, 1, 1);
-def impNuc = dup.run(imp, 2, 2, 1, 1, 1, 1);
+def impCyt = dup.run(imp, cellChannel, cellChannel, 1, 1, 1, 1);
+def impNuc = dup.run(imp, nucleiChannel, nucleiChannel, 1, 1, 1, 1);
 
 // run StarDist
 def impNucLabels = runStarDist(impNuc, 0.5, 0.25)
