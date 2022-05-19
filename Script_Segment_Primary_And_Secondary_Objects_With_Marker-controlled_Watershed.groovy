@@ -5,7 +5,9 @@
 #@ Integer (label="Nuclei Channel", value=2, max=4, min=1, style="listBox") nucleiChannel
 #@ Integer (label="Cell Channel", value=1, max=4, min=1, style="listBox") cellChannel
 #@ Double (label="StarDist Score Threshold", value=0.5, max=1.0, min=0.0, stepSize=0.05, style="slider") scoreSD
-#@ Double (label="StarDist Overlap Threshold", value=0.25, max=1.0, min=0.0, stepSize=0.05, style="slider") overlapSD
+#@ Double (label="StarDist Overlap Threshold", value=0.25, max=1.00, min=0.00, stepSize=0.05, style="slider") overlapSD
+#@ Integer (label="Min Area", value=105, style="listBox") minArea
+#@ Integer (label="Max Area", value=2500, style="listBox") maxArea
 
 import ij.IJ
 import ij.plugin.Duplicator
@@ -38,7 +40,7 @@ setDisplayMinAndMax(impNucLabels)
 
 // analyze regions
 def ar = new AnalyzeRegions()
-ar.setup("Area", impNucLabels)
+//ar.setup("Area", impNucLabels)
 def table = ar.process(impNucLabels)
 //table.show("Results")
 int count = table.size()
@@ -49,7 +51,7 @@ println "$count labels"
 def labelDiscard = []
 for (i in 0..count-1) {
 	int area = table.getValue("Area", i)
-	if (area < 105 || area > 2500) {
+	if (area < minArea || area > maxArea) {
 		labelDiscard.add(i+1)
 	}
 }
