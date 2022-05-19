@@ -10,6 +10,8 @@
 #@ Integer (label="Max Area", value=2500, style="listBox") maxArea
 #@ Double (label="Gaussian Blur [radius]", value=1.5, stepSize=0.5, style="listBox") gaussianRadius
 #@ String (label="Thresholding Method", choices={"Default", "Huang", "Intermodes", "IsoData", "IJ_IsoData", "Li", "MaxEntropy", "Mean", "MinError", "Minimum", "Moments", "Otsu", "Percentile", "RenyiEntropy", "Shanbhag", "Triangle", "Yen"}, value="Triangle", style="listBox") thresholdingMethod
+#@ String (label="Connectivity", choices={"4", "8"}, value=8, style="radioButtonHorizontal") connectivityString
+#@ Double (label="Compactness", value=5.0, stepSize=0.5, style="listBox") compactness
 
 import ij.IJ
 import ij.plugin.Duplicator
@@ -69,7 +71,9 @@ def impFilteredLabels = new ImagePlus("Nuclei Labels", ipImpNucLabels)
 impFilteredLabels.show()
 
 // marker-controlled watershed
-impCytLabels = runMarkerControlledWatershed(impCyt, impFilteredLabels)
+def connectivity = connectivityString as int
+println "Connectivity: $connectivity-connected"
+impCytLabels = runMarkerControlledWatershed(impCyt, impFilteredLabels, connectivity)
 setDisplayMinAndMax(impCytLabels)
 //impCytLabels.show()
 
@@ -115,7 +119,7 @@ def setDisplayMinAndMax(image) {
 	IJ.run(image, "glasbey inverted", "")
 }
 
-def runMarkerControlledWatershed(input, labels) {
+def runMarkerControlledWatershed(input, labels, con_4or8) {
 	def ipInput = input.getProcessor()
 	def ipLabels = labels.getProcessor()
 	
@@ -129,7 +133,7 @@ def runMarkerControlledWatershed(input, labels) {
     gb.blurGaussian(ipInputGaussian, gaussianRadius)
     ipInputGaussian.setAutoThreshold("$thresholdingMethod dark")
 	def ipBinaryMask = ipInputGaussian.createMask()
-	mcwt = new MarkerControlledWatershedTransform2D (ipInput, ipLabels, ipBinaryMask, 8, 5.0)
+	mcwt = new MarkerControlledWatershedTransform2D (ipInput, ipLabels, ipBinaryMask, con_4or8, compactness)
 	// I guess this connectivity setup  [int 8] establishes
 	// diagonal connectivity (8-connected vs 4-connected)...
 	
