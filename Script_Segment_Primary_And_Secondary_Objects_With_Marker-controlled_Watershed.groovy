@@ -8,6 +8,8 @@
 #@ Double (label="StarDist Overlap Threshold", value=0.25, max=1.00, min=0.00, stepSize=0.05, style="slider") overlapSD
 #@ Integer (label="Min Area", value=105, style="listBox") minArea
 #@ Integer (label="Max Area", value=2500, style="listBox") maxArea
+#@ Double (label="Gaussian Blur [radius]", value=1.5, stepSize=0.5, style="listBox") gaussianRadius
+#@ String (label="Thresholding Method", choices={"Default", "Huang", "Intermodes", "IsoData", "IJ_IsoData", "Li", "MaxEntropy", "Mean", "MinError", "Minimum", "Moments", "Otsu", "Percentile", "RenyiEntropy", "Shanbhag", "Triangle", "Yen"}, value="Triangle", style="listBox") thresholdingMethod
 
 import ij.IJ
 import ij.plugin.Duplicator
@@ -55,14 +57,14 @@ for (i in 0..count-1) {
 		labelDiscard.add(i+1)
 	}
 }
-def labelDiscardFloat = labelDiscard as int[]
-println "Discard labels $labelDiscardFloat"
+def labelDiscardInt = labelDiscard as int[]
+println "Discard labels $labelDiscardInt"
 
 // in nuclei labels: replace selected labels by 0
 int replaceBy = 0
 def ipImpNucLabels = impNucLabels.getProcessor()
 rlv = new ReplaceLabelValues()
-rlv.process(ipImpNucLabels, labelDiscardFloat, replaceBy)
+rlv.process(ipImpNucLabels, labelDiscardInt, replaceBy)
 def impFilteredLabels = new ImagePlus("Nuclei Labels", ipImpNucLabels)
 impFilteredLabels.show()
 
@@ -124,8 +126,8 @@ def runMarkerControlledWatershed(input, labels) {
 	def gb = new GaussianBlur()
 	def ipInputGaussian = inputGausian.getProcessor()
 
-    gb.blurGaussian(ipInputGaussian, 1.5)
-    ipInputGaussian.setAutoThreshold("Triangle dark")
+    gb.blurGaussian(ipInputGaussian, gaussianRadius)
+    ipInputGaussian.setAutoThreshold("$thresholdingMethod dark")
 	def ipBinaryMask = ipInputGaussian.createMask()
 	mcwt = new MarkerControlledWatershedTransform2D (ipInput, ipLabels, ipBinaryMask, 8, 5.0)
 	// I guess this connectivity setup  [int 8] establishes
