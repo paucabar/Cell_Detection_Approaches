@@ -27,10 +27,14 @@ import ij.process.ImageConverter
 boolean checkStarDist = isUpdateSiteActive("StarDist");
 boolean checkCSBDeep = isUpdateSiteActive("CSBDeep");
 boolean checkMorphoLibJ = isUpdateSiteActive("IJPB-plugins");
-boolean checkBIOP = isUpdateSiteActive("PTBIOP");
+
 
 // exit if any update site is missing
 // TODO
+if (checkStarDist) {
+	println "exit"
+	IJ.exit()
+}
 
 // duplicate channels
 def dup = new Duplicator()
