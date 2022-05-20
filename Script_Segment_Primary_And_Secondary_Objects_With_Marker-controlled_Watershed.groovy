@@ -35,10 +35,8 @@ boolean checkMorphoLibJ = isUpdateSiteActive("IJPB-plugins");
 
 
 // exit if any update site is missing
-// TODO
-if (checkStarDist) {
-	println "exit"
-	IJ.exit()
+if (!checkStarDist || !checkCSBDeep || !checkMorphoLibJ) {
+	return
 }
 
 // duplicate channels
