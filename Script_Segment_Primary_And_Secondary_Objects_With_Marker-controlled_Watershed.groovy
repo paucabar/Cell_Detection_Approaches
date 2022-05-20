@@ -2,14 +2,19 @@
 #@ UpdateService updateService
 #@ CommandService command
 #@ ConvertService convertService
-#@ Integer (label="Nuclei Channel", value=2, max=4, min=1, style="listBox") nucleiChannel
-#@ Integer (label="Cell Channel", value=1, max=4, min=1, style="listBox") cellChannel
+#@ String (label=" ", value="Channels", visibility=MESSAGE, persist=false) message1
+#@ Integer (label="Nuclei Marker", value=2, max=4, min=1, style="listBox") nucleiChannel
+#@ Integer (label="Cell Marker", value=1, max=4, min=1, style="listBox") cellChannel
+#@ String (label=" ", value="StarDist", visibility=MESSAGE, persist=false) message2
 #@ Double (label="StarDist Score Threshold", value=0.5, max=1.0, min=0.0, stepSize=0.05, style="slider") scoreSD
 #@ Double (label="StarDist Overlap Threshold", value=0.25, max=1.00, min=0.00, stepSize=0.05, style="slider") overlapSD
+#@ String (label=" ", value="Nuclei Size", visibility=MESSAGE, persist=false) message3
 #@ Integer (label="Min Area", value=105, style="listBox") minArea
 #@ Integer (label="Max Area", value=2500, style="listBox") maxArea
+#@ String (label=" ", value="Cell Marker Mask", visibility=MESSAGE, persist=false) message4
 #@ Double (label="Gaussian Blur [radius]", value=1.5, stepSize=0.5, style="listBox") gaussianRadius
 #@ String (label="Thresholding Method", choices={"Default", "Huang", "Intermodes", "IsoData", "IJ_IsoData", "Li", "MaxEntropy", "Mean", "MinError", "Minimum", "Moments", "Otsu", "Percentile", "RenyiEntropy", "Shanbhag", "Triangle", "Yen"}, value="Triangle", style="listBox") thresholdingMethod
+#@ String (label=" ", value="Marker-controlled Watershed", visibility=MESSAGE, persist=false) message5
 #@ String (label="Connectivity", choices={"4", "8"}, value=8, style="radioButtonHorizontal") connectivityString
 #@ Double (label="Compactness", value=5.0, stepSize=0.5, style="listBox") compactness
 
