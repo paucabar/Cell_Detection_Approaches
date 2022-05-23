@@ -1,5 +1,6 @@
 #@ ImagePlus imp
 #@ UpdateService updateService
+#@ UIService ui
 #@ CommandService command
 #@ ConvertService convertService
 #@ String (label=" ", value="Channels", visibility=MESSAGE, persist=false) message1
