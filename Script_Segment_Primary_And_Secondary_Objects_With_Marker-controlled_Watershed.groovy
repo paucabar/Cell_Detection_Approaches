@@ -79,13 +79,13 @@ def impFilteredLabels = new ImagePlus("Nuclei Labels", ipImpNucLabels)
 impFilteredLabels.show()
 
 // cytoplasm semantic segmentation
-cytoplasmMask = semanticSegmentation(impCyt)
-cytoplasmMask.show()
+impCytoplasmMask = semanticSegmentation(impCyt)
+impCytoplasmMask.show()
 
 // marker-controlled watershed
 def connectivity = connectivityString as int
 println "Connectivity: $connectivity-connected"
-impCytLabels = runMarkerControlledWatershed(impCyt, impFilteredLabels, connectivity)
+impCytLabels = runMarkerControlledWatershed(impCyt, impFilteredLabels, impCytoplasmMask, connectivity)
 setDisplayMinAndMax(impCytLabels)
 //impCytLabels.show()
 
@@ -145,24 +145,11 @@ def semanticSegmentation(input) {
 	return impBinaryMask
 }
 
-def runMarkerControlledWatershed(input, labels, con_4or8) {
+def runMarkerControlledWatershed(input, labels, mask, con_4or8) {
 	def ipInput = input.getProcessor()
 	def ipLabels = labels.getProcessor()
-	
-	def inputGausian = input.duplicate()
-	def ic = new ImageConverter(inputGausian)
-	ic.setDoScaling(true)
-	ic.convertToGray8()
-	def gb = new GaussianBlur()
-	def ipInputGaussian = inputGausian.getProcessor()
-
-    gb.blurGaussian(ipInputGaussian, gaussianRadius)
-    ipInputGaussian.setAutoThreshold("$thresholdingMethod dark")
-	def ipBinaryMask = ipInputGaussian.createMask()
-	mcwt = new MarkerControlledWatershedTransform2D (ipInput, ipLabels, ipBinaryMask, con_4or8, compactness)
-	// I guess this connectivity setup  [int 8] establishes
-	// diagonal connectivity (8-connected vs 4-connected)...
-	
+	def ipMask = mask.getProcessor()
+	mcwt = new MarkerControlledWatershedTransform2D (ipInput, ipLabels, ipMask, con_4or8, compactness)
 	labelsCell = mcwt.applyWithPriorityQueue() // label -1 for not detected cytoplasm
 	def impCytLabels = new ImagePlus("Cyt Labels", labelsCell)
 	return impCytLabels
