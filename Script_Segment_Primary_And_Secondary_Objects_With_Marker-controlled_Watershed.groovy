@@ -78,6 +78,10 @@ rlv.process(ipImpNucLabels, labelDiscardInt, replaceBy)
 def impFilteredLabels = new ImagePlus("Nuclei Labels", ipImpNucLabels)
 impFilteredLabels.show()
 
+// cytoplasm semantic segmentation
+cytoplasmMask = semanticSegmentation(impCyt)
+cytoplasmMask.show()
+
 // marker-controlled watershed
 def connectivity = connectivityString as int
 println "Connectivity: $connectivity-connected"
@@ -125,6 +129,20 @@ def setDisplayMinAndMax(image) {
 	println "Set display 0 - $maxImage"	
 	image.setDisplayRange(0, maxImage)
 	IJ.run(image, "glasbey inverted", "")
+}
+
+def semanticSegmentation(input) {
+	def ic = new ImageConverter(input)
+	ic.setDoScaling(true)
+	ic.convertToGray8()
+	def gb = new GaussianBlur()
+	def ipInputGaussian = input.getProcessor()
+	gb.blurGaussian(ipInputGaussian, gaussianRadius)
+	ipInputGaussian.setAutoThreshold("$thresholdingMethod dark")
+	def ipBinaryMask = ipInputGaussian.createMask()
+	println ipBinaryMask.getClass()
+	def impBinaryMask = new ImagePlus("Cyt Mask", ipBinaryMask)
+	return impBinaryMask
 }
 
 def runMarkerControlledWatershed(input, labels, con_4or8) {
