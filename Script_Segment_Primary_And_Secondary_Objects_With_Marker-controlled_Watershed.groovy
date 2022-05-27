@@ -13,8 +13,9 @@
 #@ Integer (label="Min Area", value=105, style="listBox") minArea
 #@ Integer (label="Max Area", value=2500, style="listBox") maxArea
 #@ String (label=" ", value="Cell Marker Mask", visibility=MESSAGE, persist=false) message4
+#@ Double (label="Enhance Contrast [% Sat Pixels]", value=3.0, stepSize=0.5, style="listBox") saturatedPixels
 #@ Double (label="Gaussian Blur [radius]", value=1.5, stepSize=0.5, style="listBox") gaussianRadius
-#@ String (label="Thresholding Method", choices={"Default", "Huang", "Intermodes", "IsoData", "IJ_IsoData", "Li", "MaxEntropy", "Mean", "MinError", "Minimum", "Moments", "Otsu", "Percentile", "RenyiEntropy", "Shanbhag", "Triangle", "Yen"}, value="Percentile", style="listBox") thresholdingMethod
+#@ String (label="Thresholding Method", choices={"Default", "Huang", "Intermodes", "IsoData", "IJ_IsoData", "Li", "MaxEntropy", "Mean", "MinError", "Minimum", "Moments", "Otsu", "Percentile", "RenyiEntropy", "Shanbhag", "Triangle", "Yen"}, value="Triangle", style="listBox") thresholdingMethod
 #@ String (label=" ", value="Marker-controlled Watershed", visibility=MESSAGE, persist=false) message5
 #@ String (label="Connectivity", choices={"4", "8"}, value=8, style="radioButtonHorizontal") connectivityString
 #@ Double (label="Compactness", value=5.0, stepSize=0.5, style="listBox") compactness
@@ -80,7 +81,7 @@ impFilteredLabels.show()
 
 // cytoplasm semantic segmentation
 impCytoplasmMask = semanticSegmentation(impCyt2)
-impCytoplasmMask.show()
+//impCytoplasmMask.show()
 
 // marker-controlled watershed
 def connectivity = connectivityString as int
@@ -133,7 +134,7 @@ def setDisplayMinAndMax(image) {
 }
 
 def semanticSegmentation(input) {
-	IJ.run(input, 'Enhance Contrast...', 'saturated=0.3 update')
+	IJ.run(input, "Enhance Contrast...", "saturated=$saturatedPixels update")
 	IJ.run(input, "Apply LUT", "");
 	def gb = new GaussianBlur()
 	def ipInput = input.getProcessor()
