@@ -14,7 +14,7 @@
 #@ Integer (label="Max Area", value=2500, style="listBox") maxArea
 #@ String (label=" ", value="Cell Marker Mask", visibility=MESSAGE, persist=false) message4
 #@ Double (label="Gaussian Blur [radius]", value=1.5, stepSize=0.5, style="listBox") gaussianRadius
-#@ String (label="Thresholding Method", choices={"Default", "Huang", "Intermodes", "IsoData", "IJ_IsoData", "Li", "MaxEntropy", "Mean", "MinError", "Minimum", "Moments", "Otsu", "Percentile", "RenyiEntropy", "Shanbhag", "Triangle", "Yen"}, value="Triangle", style="listBox") thresholdingMethod
+#@ String (label="Thresholding Method", choices={"Default", "Huang", "Intermodes", "IsoData", "IJ_IsoData", "Li", "MaxEntropy", "Mean", "MinError", "Minimum", "Moments", "Otsu", "Percentile", "RenyiEntropy", "Shanbhag", "Triangle", "Yen"}, value="Percentile", style="listBox") thresholdingMethod
 #@ String (label=" ", value="Marker-controlled Watershed", visibility=MESSAGE, persist=false) message5
 #@ String (label="Connectivity", choices={"4", "8"}, value=8, style="radioButtonHorizontal") connectivityString
 #@ Double (label="Compactness", value=5.0, stepSize=0.5, style="listBox") compactness
@@ -34,7 +34,6 @@ boolean checkStarDist = isUpdateSiteActive("StarDist");
 boolean checkCSBDeep = isUpdateSiteActive("CSBDeep");
 boolean checkMorphoLibJ = isUpdateSiteActive("IJPB-plugins");
 
-
 // exit if any update site is missing
 if (!checkStarDist || !checkCSBDeep || !checkMorphoLibJ) {
 	return
@@ -44,6 +43,8 @@ if (!checkStarDist || !checkCSBDeep || !checkMorphoLibJ) {
 def dup = new Duplicator()
 def impCyt = dup.run(imp, cellChannel, cellChannel, 1, 1, 1, 1);
 def impNuc = dup.run(imp, nucleiChannel, nucleiChannel, 1, 1, 1, 1);
+IJ.resetMinAndMax(impCyt)
+IJ.resetMinAndMax(impNuc)
 
 // run StarDist
 def impNucLabels = runStarDist(impNuc, scoreSD, overlapSD)
@@ -95,9 +96,10 @@ def arrayMinusOne = [-1.0] as float[]
 def ipImpCytLabels = impCytLabels.getProcessor()
 rlv.process(ipImpCytLabels, arrayMinusOne, replaceByFloat)
 def impCellLabels = new ImagePlus("Cytoplasm Labels", ipImpCytLabels)
-def ic3 = new ImageConverter(impCellLabels)
-ic3.setDoScaling(false)
-ic3.convertToGray16()
+def ic = new ImageConverter(impCellLabels)
+ic.setDoScaling(false)
+ic.convertToGray16()
+ic.setDoScaling(true)
 setDisplayMinAndMax(impCellLabels)
 impCellLabels.show()
 
@@ -132,14 +134,11 @@ def setDisplayMinAndMax(image) {
 }
 
 def semanticSegmentation(input) {
-	def ic = new ImageConverter(input)
-	ic.setDoScaling(true)
-	ic.convertToGray8()
 	def gb = new GaussianBlur()
-	def ipInputGaussian = input.getProcessor()
-	gb.blurGaussian(ipInputGaussian, gaussianRadius)
-	ipInputGaussian.setAutoThreshold("$thresholdingMethod dark")
-	def ipBinaryMask = ipInputGaussian.createMask()
+	def ipInput = input.getProcessor()
+	gb.blurGaussian(ipInput, gaussianRadius)
+	ipInput.setAutoThreshold("$thresholdingMethod dark")
+	def ipBinaryMask = ipInput.createMask()
 	println ipBinaryMask.getClass()
 	def impBinaryMask = new ImagePlus("Cyt Mask", ipBinaryMask)
 	return impBinaryMask
