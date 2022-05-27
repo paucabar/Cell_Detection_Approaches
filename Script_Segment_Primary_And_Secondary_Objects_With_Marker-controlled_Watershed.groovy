@@ -42,9 +42,8 @@ if (!checkStarDist || !checkCSBDeep || !checkMorphoLibJ) {
 // duplicate channels
 def dup = new Duplicator()
 def impCyt = dup.run(imp, cellChannel, cellChannel, 1, 1, 1, 1);
+def impCyt2 = dup.run(imp, cellChannel, cellChannel, 1, 1, 1, 1);
 def impNuc = dup.run(imp, nucleiChannel, nucleiChannel, 1, 1, 1, 1);
-IJ.resetMinAndMax(impCyt)
-IJ.resetMinAndMax(impNuc)
 
 // run StarDist
 def impNucLabels = runStarDist(impNuc, scoreSD, overlapSD)
@@ -80,7 +79,7 @@ def impFilteredLabels = new ImagePlus("Nuclei Labels", ipImpNucLabels)
 impFilteredLabels.show()
 
 // cytoplasm semantic segmentation
-impCytoplasmMask = semanticSegmentation(impCyt)
+impCytoplasmMask = semanticSegmentation(impCyt2)
 impCytoplasmMask.show()
 
 // marker-controlled watershed
@@ -134,12 +133,13 @@ def setDisplayMinAndMax(image) {
 }
 
 def semanticSegmentation(input) {
+	IJ.run(input, 'Enhance Contrast...', 'saturated=0.3 update')
+	IJ.run(input, "Apply LUT", "");
 	def gb = new GaussianBlur()
 	def ipInput = input.getProcessor()
 	gb.blurGaussian(ipInput, gaussianRadius)
 	ipInput.setAutoThreshold("$thresholdingMethod dark")
 	def ipBinaryMask = ipInput.createMask()
-	println ipBinaryMask.getClass()
 	def impBinaryMask = new ImagePlus("Cyt Mask", ipBinaryMask)
 	return impBinaryMask
 }
