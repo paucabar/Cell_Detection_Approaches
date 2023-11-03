@@ -34,6 +34,7 @@ import ij.Prefs
 import ij.plugin.frame.RoiManager
 import ij.gui.Roi
 import ij.plugin.filter.ThresholdToSelection
+import ij.measure.ResultsTable
 
 
 def isUpdateSiteActive (updateSite) {
@@ -56,7 +57,7 @@ String getModelPath(File modelFile) {
 	return modifiedPath
 }
 
-def runStarDist(input, scoreTh, overlapTh, modelFile) {
+ImagePlus runStarDist(input, scoreTh, overlapTh, modelFile) {
 	res = command.run(StarDist2D, false,
 			"input", input,
 			"modelChoice", "Model (.zip) from File",
@@ -70,47 +71,12 @@ def runStarDist(input, scoreTh, overlapTh, modelFile) {
 	return impInputLabel
 }
 
-def setDisplayMinAndMax(image) {
+void setDisplayMinAndMax(image) {
 	def ip = image.getProcessor()
 	maxImage = ip.getStats().max as int
 	println "Set display 0 - $maxImage"	
 	image.setDisplayRange(0, maxImage)
 	IJ.run(image, "glasbey inverted", "")
-}
-
-// Implements the Erode, Dilate, Open and Close commands in the Process/Binary submenu. 
-public void run (ImageProcessor ip, String arg) {
-    int fg = Prefs.blackBackground ? 255 : 0;
-    foreground = ip.isInvertedLut() ? 255-fg : fg;
-    background = 255 - foreground;
-    ip.setSnapshotCopyMode(true);
-
-	if (arg.equals("erode") || arg.equals("dilate")) {
-        doIterations((ByteProcessor)ip, arg);
-	} else if (arg.equals("open")) {
-        doIterations(ip, "erode");
-        doIterations(ip, "dilate");
-    } else if (arg.equals("close")) {
-        doIterations(ip, "dilate");
-        doIterations(ip, "erode");
-    }
-    ip.setSnapshotCopyMode(false);
-    ip.setBinaryThreshold();
-}
-
-void doIterations (ImageProcessor ip, String mode) {
-    for (int i=0; i<iterations; i++) {
-        if (Thread.currentThread().isInterrupted()) return;
-        if (IJ.escapePressed()) {
-            escapePressed = true;
-            ip.reset();
-            return;
-        }
-        if (mode.equals("erode"))
-            ((ByteProcessor)ip).erode(count, background);
-        else
-            ((ByteProcessor)ip).dilate(count, background);
-    }
 }
 
 ImagePlus labelToBinary(ImagePlus imp) {
@@ -148,6 +114,49 @@ RoiManager labelsToRois(ImagePlus imp, RoiManager rm) {
 		rm.addRoi(roiTemp)
 	}
 	return rm
+}
+
+// This function calculates the specified number of bins (each represented as a tuple with minimum and maximum values) based on a list of numeric values
+Collection getBins(List<Number> values, int numBins) {
+	// Calculate bin width
+	def binWidth = (values.max() - values.min()) / numBins
+	
+	// Create bins as a list of tuples
+	def bins = (0..<numBins).collect { index ->
+	    def min = values.min() + index * binWidth
+	    def max = index == numBins - 1 ? values.max() + 1e-6 : min + binWidth
+	    [min, max]
+	}
+	return bins
+}
+
+// Function to find the bin for a new value and return a tuple representing the bin's min and max values
+// Returns: Tuple
+def findBinForValue(value, bins) {
+    return bins.find { bin ->
+        value >= bin[0] && value < bin[1]
+    }
+}
+
+// Function to label values with bins
+List<Integer> labeledValues(List<Number> values, int numBins) {
+    def bins = getBins(values, numBins)
+    
+    // Create a list to store the labels
+    def labels = []
+
+    // Iterate through the values and label them with the corresponding bin
+    values.each { value ->
+        def bin = findBinForValue(value, bins)
+        if (bin) {
+            // Add 1 to the bin index to start from 1
+            labels.add(bins.indexOf(bin) + 1)
+        } else {
+            // Handle values that don't belong to any bin
+            labels.add(0) // You can use 0 or another value to represent this case
+        }
+    }
+    return labels
 }
 
 
@@ -218,6 +227,7 @@ membraneRoiManager = labelsToRois(impBorder, membraneRoiManager)
 innerRoiManager = labelsToRois(impEroded, innerRoiManager)
 assert nucleusRoiManager.getCount() == membraneRoiManager.getCount() && membraneRoiManager.getCount() == innerRoiManager.getCount(), "The count of the nuclei, nuclear membrane, and nuclear intern ROIs doesn't match. Perhaps you eroded too much??"
 
+// measure
 resultsMap = [ : ]
 for (i in 0..nucleusRoiManager.getCount()-1) {
 	// get the 3 Rois and check they correspond to the same label
@@ -232,6 +242,27 @@ for (i in 0..nucleusRoiManager.getCount()-1) {
 	inMean = inRoi.getStatistics().mean
 	resultsMap[nucRoi.getName()] = [memMean, inMean, memMean/inMean]
 }
+
+// Get the keys and values from the map
+def keysList = resultsMap.keySet()
+def memMeanList = resultsMap.collect { key, value -> value[0] }
+def inMeanList = resultsMap.collect { key, value -> value[1] }
+def ratioList = resultsMap.collect { key, value -> value[2] }
+
+
+// create and fill result table
+ResultsTable rt = new ResultsTable(keysList.size())
+rt.setPrecision(5)
+rt.setValues("Membrane Mean", memMeanList as double[])
+rt.setValues("Internal Mean", inMeanList as double[])
+rt.setValues("Mem/Int Rate", ratioList as double[])
+// set table labels
+for (i in 0..keysList.size()-1) {
+    rt.setLabel(keysList[i], i)
+}
+
+// show results table
+rt.show("Results Table")
 
 /**
  * Creates a label image from the RoiManager
