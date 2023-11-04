@@ -5,7 +5,7 @@
 #@ File(label="Image File", style="open") file
 #@ File(label="StarDist Model", style="open") modelFile
 #@ String (label=" ", value="Channels", visibility=MESSAGE, persist=false) message1
-#@ Integer (label="Nuclei Marker", value=1, max=4, min=1, style="listBox") nucleiChannel
+#@ Integer (label="Nuclear Marker", value=1, max=4, min=1, style="listBox") nucleiChannel
 #@ Integer (label="Membrane Marker", value=2, max=4, min=1, style="listBox") membraneChannel
 #@ Integer (label="Slice", value=1, max=10, min=1, style="listBox") slice
 #@ String (label=" ", value="StarDist", visibility=MESSAGE, persist=false) message2
@@ -206,10 +206,27 @@ imp = openImage(file)
 imp.show()
 setLUTs(imp)
 
+// some checks on imp
+dims = imp.getDimensions() // default order: XYCZT
+if (dims[2] < nucleiChannel) {
+	ui.showDialog "The nuclear channel has been set to $nucleiChannel, while the image contains only ${dims[2]} channels."
+	return
+} else if (dims[2] < membraneChannel) {
+	ui.showDialog "The membrane channel has been set to $membraneChannel, while the image contains only ${dims[2]} channels."
+	return
+} else if (nucleiChannel == membraneChannel) {
+	ui.showDialog "WARNING: Both the membrane channel and the nuclear channel have been set to the same value: [$membraneChannel]."
+} else if (dims[3] < slice) {
+	ui.showDialog "The slice has been set to $slice, while the image contains only ${dims[3]} slices."
+	return
+}
+
 // duplicate channels
 Duplicator duplicator = new Duplicator()
-ImagePlus impMembrane = duplicator.run(imp, membraneChannel, membraneChannel, slice, slice, 1, 1);
-ImagePlus impNuc = duplicator.run(imp, nucleiChannel, nucleiChannel, slice, slice, 1, 1);
+ImagePlus impMembrane = duplicator.run(imp, membraneChannel, membraneChannel, slice, slice, 1, 1)
+ImagePlus impNuc = duplicator.run(imp, nucleiChannel, nucleiChannel, slice, slice, 1, 1)
+//impMembrane.show()
+impNuc.show()
 
 // run StarDist
 def impNucLabels = runStarDist(impNuc, scoreSD, overlapSD, modelFile)
