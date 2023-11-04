@@ -1,12 +1,13 @@
-#@ ImagePlus imp
 #@ UpdateService updateService
 #@ UIService ui
 #@ CommandService command
 #@ ConvertService convertService
+#@ File(label="Image File", style="open") file
 #@ File(label="StarDist Model", style="open") modelFile
 #@ String (label=" ", value="Channels", visibility=MESSAGE, persist=false) message1
 #@ Integer (label="Nuclei Marker", value=1, max=4, min=1, style="listBox") nucleiChannel
 #@ Integer (label="Membrane Marker", value=2, max=4, min=1, style="listBox") membraneChannel
+#@ Integer (label="Slice", value=1, max=10, min=1, style="listBox") slice
 #@ String (label=" ", value="StarDist", visibility=MESSAGE, persist=false) message2
 #@ Double (label="StarDist Score Threshold", value=0.5, max=1.0, min=0.0, stepSize=0.05, style="slider") scoreSD
 #@ Double (label="StarDist Overlap Threshold", value=0.25, max=1.00, min=0.00, stepSize=0.05, style="slider") overlapSD
@@ -15,7 +16,10 @@
 #@ Integer (label="Max Area", value=2500, style="listBox") maxArea
 #@ Integer (label="Erode Iterations", value=1, max=99, min=1, style="listBox") iterations
 
+import ij.io.Opener
 import ij.IJ
+import ij.process.LUT
+import java.awt.Color
 import ij.plugin.Duplicator
 import de.csbdresden.stardist.StarDist2D
 import ij.ImagePlus
@@ -44,6 +48,33 @@ def isUpdateSiteActive (updateSite) {
     	checkUpdate = false
 	}
 	return checkUpdate
+}
+
+ImagePlus openImage(File file) {
+	String path = file.getAbsolutePath()
+	def opener = new Opener()
+	String extension = path[path.lastIndexOf('.')+1..-1]
+	println "Importing $extension file"
+	ImagePlus imp = opener.openUsingBioFormats(path)
+
+
+	return imp
+}
+
+// set composite LUTs
+void setLUTs(ImagePlus imp) {
+	colorList = [Color.RED, Color.GREEN, Color.BLUE, Color.MAGENTA, Color.CYAN, Color.YELLOW]
+	luts = imp.getLuts()
+	int nChannels = imp.nChannels
+	for (i in 0..nChannels-1) {
+		luts[i] = LUT.createLutFromColor(colorList[i])
+	}
+	
+	imp.setLuts(luts)
+	int displayMode = imp.getDisplayMode()
+	if (displayMode != IJ.COMPOSITE) {
+		imp.setDisplayMode(IJ.COMPOSITE)
+	}
 }
 
 String getModelPath(File modelFile) {
@@ -79,13 +110,13 @@ void setDisplayMinAndMax(image) {
 	IJ.run(image, "glasbey inverted", "")
 }
 
-ImagePlus labelToBinary(ImagePlus imp) {
-	ImageProcessor ip = imp.getProcessor()
-	ip.setThreshold (1, 255, ImageProcessor.NO_LUT_UPDATE)
-	ImageProcessor ipBinary = ip.createMask() // image processor
-	ImagePlus impBinary = new ImagePlus("Binary Mask", ipBinary)
-	return impBinary
-}
+//ImagePlus labelToBinary(ImagePlus imp) {
+//	ImageProcessor ip = imp.getProcessor()
+//	ip.setThreshold (1, 255, ImageProcessor.NO_LUT_UPDATE)
+//	ImageProcessor ipBinary = ip.createMask() // image processor
+//	ImagePlus impBinary = new ImagePlus("Binary Mask", ipBinary)
+//	return impBinary
+//}
 
 ImagePlus erodeLabels(ImagePlus imp, double radius) {
 	def labelErosion = new ChamferLabelErosion2DShort(ChamferMask2D.CHESSBOARD, radius)
@@ -170,10 +201,15 @@ if (!checkStarDist || !checkCSBDeep || !checkMorphoLibJ) {
 	return
 }
 
+//import image
+imp = openImage(file)
+imp.show()
+setLUTs(imp)
+
 // duplicate channels
 Duplicator duplicator = new Duplicator()
-ImagePlus impMembrane = duplicator.run(imp, membraneChannel, membraneChannel, 1, 1, 1, 1);
-ImagePlus impNuc = duplicator.run(imp, nucleiChannel, nucleiChannel, 1, 1, 1, 1);
+ImagePlus impMembrane = duplicator.run(imp, membraneChannel, membraneChannel, slice, slice, 1, 1);
+ImagePlus impNuc = duplicator.run(imp, nucleiChannel, nucleiChannel, slice, slice, 1, 1);
 
 // run StarDist
 def impNucLabels = runStarDist(impNuc, scoreSD, overlapSD, modelFile)
