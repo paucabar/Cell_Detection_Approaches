@@ -190,6 +190,22 @@ List<Integer> labeledValues(List<Number> values, int numBins) {
     return labels
 }
 
+/**
+ * Creates a label image from the RoiManager
+ * Uses Roi indexes as labels
+ */
+ImagePlus resultColormap(ImagePlus imp, RoiManager rm, List<Integer> binLabelsList) {
+    impColormap = IJ.createImage("Labeling", "32-bit black", imp.getWidth(), imp.getHeight(), 1)
+    ip = impColormap.getProcessor()
+    rm.getRoisAsArray().eachWithIndex { roi, index ->
+        ip.setColor(binLabelsList[index]) // set membrane intensity as color
+        ip.fill(roi)
+    }
+    ip.resetMinAndMax()
+    IJ.run(impColormap, "Fire", "")
+    return impColormap
+}
+
 
 // check update sites
 boolean checkStarDist = isUpdateSiteActive("StarDist");
@@ -226,7 +242,7 @@ Duplicator duplicator = new Duplicator()
 ImagePlus impMembrane = duplicator.run(imp, membraneChannel, membraneChannel, slice, slice, 1, 1)
 ImagePlus impNuc = duplicator.run(imp, nucleiChannel, nucleiChannel, slice, slice, 1, 1)
 //impMembrane.show()
-impNuc.show()
+//impNuc.show()
 
 // run StarDist
 def impNucLabels = runStarDist(impNuc, scoreSD, overlapSD, modelFile)
@@ -267,7 +283,6 @@ ImagePlus impBorder = duplicator.run(impFilteredLabels, 1, 1, 1, 1, 1, 1)
 subtractLabels(impBorder, impEroded)
 //impEroded.show()
 //impBorder.show()
-
 
 // create RoiManagers
 RoiManager nucleusRoiManager = new RoiManager(false)
@@ -317,26 +332,13 @@ for (i in 0..keysList.size()-1) {
 // show results table
 rt.show("Results Table")
 
-/**
- * Creates a label image from the RoiManager
- * Uses Roi indexes as labels
- */
-ImagePlus resultColormap(ImagePlus imp, RoiManager rm, map) {
-    impColormap = IJ.createImage("Labeling", "32-bit black", imp.getWidth(), imp.getHeight(), 1)
-    ip = impColormap.getProcessor()
-    rm.getRoisAsArray().eachWithIndex { roi, index ->
-        roiCode = roi.getName()
-        metrics = map[roiCode]
-        ip.setColor(metrics[0]) // set membrane intensity as color
-        ip.fill(roi)
-    }
-    ip.resetMinAndMax()
-    IJ.run(impColormap, "mpl-plasma", "")
-    return impColormap
-}
-
-colormap = resultColormap(impFilteredLabels, nucleusRoiManager, resultsMap)
+// create colormap
+int nBins = 25
+Collection bins = getBins(memMeanList, nBins)
+List<Integer> binLabelsList = labeledValues(memMeanList, nBins)
+colormap = resultColormap(impFilteredLabels, nucleusRoiManager, binLabelsList)
 colormap.show()
 impMembrane.show()
+IJ.run("Select None")
 IJ.run(impMembrane, "Grays", "")
 return
