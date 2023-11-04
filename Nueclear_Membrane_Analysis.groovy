@@ -39,6 +39,7 @@ import ij.plugin.frame.RoiManager
 import ij.gui.Roi
 import ij.plugin.filter.ThresholdToSelection
 import ij.measure.ResultsTable
+import ij.gui.Overlay
 
 
 def isUpdateSiteActive (updateSite) {
@@ -333,12 +334,13 @@ for (i in 0..keysList.size()-1) {
 rt.show("Results Table")
 
 // create colormap
-int nBins = 25
+int nBins = 20
 Collection bins = getBins(memMeanList, nBins)
 List<Integer> binLabelsList = labeledValues(memMeanList, nBins)
 colormap = resultColormap(impFilteredLabels, nucleusRoiManager, binLabelsList)
 colormap.show()
 impMembrane.show()
-IJ.run("Select None")
 IJ.run(impMembrane, "Grays", "")
+IJ.run("Add Image...", "image=Labeling x=0 y=0 opacity=35 zero")
+IJ.run("Select None")
 return
