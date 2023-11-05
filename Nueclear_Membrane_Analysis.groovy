@@ -15,6 +15,8 @@
 #@ Integer (label="Min Area", value=105, style="listBox") minArea
 #@ Integer (label="Max Area", value=2500, style="listBox") maxArea
 #@ Integer (label="Erode Iterations", value=1, max=99, min=1, style="listBox") iterations
+#@ String (label="LUT", choices={"mpl-viridis", "mpl-plasma", "mpl-inferno", "mpl-magma"}, value="mpl-viridis", style="listBox") lutName
+
 
 import ij.io.Opener
 import ij.IJ
@@ -39,7 +41,9 @@ import ij.plugin.frame.RoiManager
 import ij.gui.Roi
 import ij.plugin.filter.ThresholdToSelection
 import ij.measure.ResultsTable
-import ij.gui.Overlay
+import ij.IJ
+import ij.plugin.LutLoader 
+import ij.process.LUT
 
 
 def isUpdateSiteActive (updateSite) {
@@ -191,11 +195,43 @@ List<Integer> labeledValues(List<Number> values, int numBins) {
     return labels
 }
 
+def getLutFromName(String name) {
+	// Get the ImageJ directory
+	def imagejDirectory = IJ.getDirectory("imagej")
+	
+	// Specify the LUT file path relative to the ImageJ directory
+	String lutDirectory = "luts"
+	String lutFileName = name + ".lut"
+	String pathLut = imagejDirectory + lutDirectory + File.separator + lutFileName
+	
+	// Load LUT
+	LUT originalLut = LutLoader.openLut(pathLut)
+	
+	// Split the list into 3 lists with 256 values each
+	bytesList = originalLut.getBytes()
+	def splitLists = []
+	def batchSize = 256
+	for (int i = 0; i < bytesList.size(); i += batchSize) {
+	    def endIndex = Math.min(i + batchSize, bytesList.size())
+	    def sublist = bytesList[i..endIndex - 1] as byte[]
+	    splitLists << sublist
+	}
+	
+	// Replace the first value of each splitList with 0 as a byte
+	for (def i = 0; i < splitLists.size(); i++) {
+	    splitLists[i][0] = (byte) 0
+	}
+	
+	// Use modified bytes to create new LUT
+	LUT newLUT = new LUT(splitLists[0], splitLists[1], splitLists[2])
+	return newLUT
+}
+
 /**
  * Creates a label image from the RoiManager
  * Uses Roi indexes as labels
  */
-ImagePlus resultColormap(ImagePlus imp, RoiManager rm, List<Integer> binLabelsList) {
+ImagePlus resultColormap(ImagePlus imp, RoiManager rm, List<Integer> binLabelsList, String lutName) {
     impColormap = IJ.createImage("Labeling", "32-bit black", imp.getWidth(), imp.getHeight(), 1)
     ip = impColormap.getProcessor()
     rm.getRoisAsArray().eachWithIndex { roi, index ->
@@ -203,10 +239,10 @@ ImagePlus resultColormap(ImagePlus imp, RoiManager rm, List<Integer> binLabelsLi
         ip.fill(roi)
     }
     ip.resetMinAndMax()
-    IJ.run(impColormap, "Fire", "")
+    LUT lut = getLutFromName(lutName)
+    impColormap.setLut(lut)
     return impColormap
 }
-
 
 // check update sites
 boolean checkStarDist = isUpdateSiteActive("StarDist");
@@ -337,10 +373,10 @@ rt.show("Results Table")
 int nBins = 20
 Collection bins = getBins(memMeanList, nBins)
 List<Integer> binLabelsList = labeledValues(memMeanList, nBins)
-colormap = resultColormap(impFilteredLabels, nucleusRoiManager, binLabelsList)
+colormap = resultColormap(impFilteredLabels, nucleusRoiManager, binLabelsList, lutName)
 colormap.show()
 impMembrane.show()
 IJ.run(impMembrane, "Grays", "")
-IJ.run("Add Image...", "image=Labeling x=0 y=0 opacity=35 zero")
+IJ.run("Add Image...", "image=" + colormap.getTitle() + " x=0 y=0 opacity=35 zero")
 IJ.run("Select None")
 return
