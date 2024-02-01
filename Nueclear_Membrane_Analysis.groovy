@@ -144,10 +144,12 @@ RoiManager labelsToRois(ImagePlus imp, RoiManager rm) {
 	for (i in 1..max) {
 		ip.setThreshold(i, i, ImageProcessor.NO_LUT_UPDATE)
 	    Roi roiTemp = getSelection.convert(ip)
-		//roiTemp.setColor(Color.RED)
-		roiTemp.setName(String.format("%03d", i))
-		roiTemp.setStrokeWidth(1)
-		rm.addRoi(roiTemp)
+	    if (roiTemp != null) {
+			//roiTemp.setColor(Color.RED)
+			roiTemp.setName(String.format("%03d", i))
+			roiTemp.setStrokeWidth(1)
+			rm.addRoi(roiTemp)
+	    }
 	}
 	return rm
 }
